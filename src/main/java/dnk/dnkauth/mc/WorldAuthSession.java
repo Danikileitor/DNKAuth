@@ -12,8 +12,7 @@ import dnk.dnkauth.files.AuthStore;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
@@ -64,25 +63,22 @@ public class WorldAuthSession {
 			message = "You need to set a password, do /createaccount";
 		}
 		
-		final MutableComponent urgentMessage = new TextComponent(message).withStyle(ChatFormatting.DARK_GRAY);
-		player.sendMessage(urgentMessage, player.getUUID());
+		player.sendSystemMessage(Component.literal(message).withStyle(ChatFormatting.DARK_GRAY));
 	}
 	
 	public void tryResetPassword(final ServerPlayer player, final String newPassword) {
 		final String username = getUsername(player);
 		
 		if (unauthenticatedUsers.containsKey(username)) {
-			final MutableComponent message = new TextComponent("Need to log in first").withStyle(ChatFormatting.DARK_RED);
-			player.sendMessage(message, player.getUUID());
+			player.sendSystemMessage(Component.literal("Need to log in first").withStyle(ChatFormatting.DARK_RED));
 		} else if (authenticatedUsers.contains(username)) {
 			try {
 				authStore.changePassword(username, newPassword);
 				
-				final MutableComponent message = new TextComponent("Successfully changed password").withStyle(ChatFormatting.GREEN);
-				player.sendMessage(message, player.getUUID());
+				player.sendSystemMessage(Component.literal("Successfully changed password").withStyle(ChatFormatting.GREEN));
 			} catch (NoSuchAlgorithmException e) {
 				e.printStackTrace();
-				DNKAuth.LOGGER.error("MC Auth cannot function without SHA512 or SHA256. Please uninstall the plugin or install a native implementation of at least one of these algorithms.");
+				DNKAuth.LOGGER.error("DNK Auth cannot function without SHA512 or SHA256. Please uninstall the plugin or install a native implementation of at least one of these algorithms.");
 				System.exit(-1);
 			}
 		}
@@ -92,11 +88,9 @@ public class WorldAuthSession {
 		try {
 			authStore.removeUser(username);
 			
-			final MutableComponent message = new TextComponent("Successfully removed \"" + username + "\"");
-			executor.sendSuccess(message, false);
+			executor.sendSuccess(Component.literal("Successfully removed \"" + username + "\""), false);
 		} catch (IllegalArgumentException e) {
-			final MutableComponent message = new TextComponent("User does not have an account").withStyle(ChatFormatting.DARK_RED);
-			executor.sendFailure(message);
+			executor.sendFailure(Component.literal("User does not have an account").withStyle(ChatFormatting.DARK_RED));
 		}
 	}
 	
@@ -108,15 +102,14 @@ public class WorldAuthSession {
 	}
 	
 	private void kickPlayer(final ServerPlayer player, final String reason) {
-		player.connection.disconnect(new TextComponent(reason));
+		player.connection.disconnect(Component.literal(reason));
 	}
 	
 	public boolean onLoginAttempt(final ServerPlayer player, final String password) {
 		final String username = getUsername(player);
 		
 		if (authenticatedUsers.contains(username)) {
-			final MutableComponent alreadyLoggedInMessage = new TextComponent("Already logged in").withStyle(ChatFormatting.YELLOW);
-			player.sendMessage(alreadyLoggedInMessage, player.getUUID());
+			player.sendSystemMessage(Component.literal("Already logged in").withStyle(ChatFormatting.YELLOW));
 			return true;
 		}
 		
@@ -127,8 +120,7 @@ public class WorldAuthSession {
 				unauthenticatedUsers.remove(username);
 				authenticatedUsers.add(username);
 				
-				final MutableComponent goodLoginMessage = new TextComponent("Successfully logged in").withStyle(ChatFormatting.GREEN);
-				player.sendMessage(goodLoginMessage, player.getUUID());
+				player.sendSystemMessage(Component.literal("Successfully logged in").withStyle(ChatFormatting.GREEN));
 				return true;
 			}
 			
@@ -142,17 +134,15 @@ public class WorldAuthSession {
 				return false;
 			}
 			
-			final MutableComponent badPasswordMessage = new TextComponent("Bad password (max " + maxLoginTries + " attempts)").withStyle(ChatFormatting.DARK_RED);
-			player.sendMessage(badPasswordMessage, player.getUUID());
+			player.sendSystemMessage(Component.literal("Bad password (max " + maxLoginTries + " attempts)").withStyle(ChatFormatting.DARK_RED));
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
-			DNKAuth.LOGGER.error("MC Auth cannot function without SHA512 or SHA256. Please uninstall the plugin or install a native implementation of at least one of these algorithms.");
+			DNKAuth.LOGGER.error("DNK Auth cannot function without SHA512 or SHA256. Please uninstall the plugin or install a native implementation of at least one of these algorithms.");
 			System.exit(-1);
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 			
-			final MutableComponent createAccountMessage = new TextComponent("Before doing /login, you need to create a password with /createaccount").withStyle(ChatFormatting.YELLOW);
-			player.sendMessage(createAccountMessage, player.getUUID());
+			player.sendSystemMessage(Component.literal("Before doing /login, you need to create a password with /createaccount").withStyle(ChatFormatting.YELLOW));
 		}
 		
 		return false;
@@ -162,8 +152,7 @@ public class WorldAuthSession {
 		final String username = getUsername(player);
 		
 		if (authStore.userExists(username)) {
-			final MutableComponent accountExistsMessage = new TextComponent("Account already exists, try /login").withStyle(ChatFormatting.DARK_RED);
-			player.sendMessage(accountExistsMessage, player.getUUID());
+			player.sendSystemMessage(Component.literal("Account already exists, try /login").withStyle(ChatFormatting.DARK_RED));
 			return;
 		}
 		
@@ -173,11 +162,10 @@ public class WorldAuthSession {
 			unauthenticatedUsers.remove(username);
 			authenticatedUsers.add(username);
 			
-			final MutableComponent goodLoginMessage = new TextComponent("Successfully created account").withStyle(ChatFormatting.GREEN);
-			player.sendMessage(goodLoginMessage, player.getUUID());
+			player.sendSystemMessage(Component.literal("Successfully created account").withStyle(ChatFormatting.GREEN));
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
-			DNKAuth.LOGGER.error("MC Auth cannot function without SHA512 or SHA256. Please uninstall the plugin or install a native implementation of at least one of these algorithms.");
+			DNKAuth.LOGGER.error("DNK Auth cannot function without SHA512 or SHA256. Please uninstall the plugin or install a native implementation of at least one of these algorithms.");
 			System.exit(-1);
 		}
 	}
